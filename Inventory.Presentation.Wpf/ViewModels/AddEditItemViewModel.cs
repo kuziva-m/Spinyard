@@ -3,6 +3,8 @@ using Inventory.Core.Application.Interfaces;
 using Inventory.Presentation.Wpf.Commands;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows.Input;
 
 namespace Inventory.Presentation.Wpf.ViewModels
@@ -65,6 +67,14 @@ namespace Inventory.Presentation.Wpf.ViewModels
             set { _newOptionValues = value; OnPropertyChanged(); }
         }
 
+        // This new property will hold our dynamic header text
+        private string _variantOptionsHeader = "Variant";
+        public string VariantOptionsHeader
+        {
+            get => _variantOptionsHeader;
+            set { _variantOptionsHeader = value; OnPropertyChanged(); }
+        }
+
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand BrowseImageCommand { get; }
@@ -75,6 +85,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
 
         public string WindowTitle => IsEditing ? "Edit Item" : "Add Item";
         public bool HasOptions => Options.Any();
+        public bool HasVariants => Variants.Any();
 
         public AddEditItemViewModel(IInventoryService inventoryService)
         {
@@ -82,6 +93,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
             Categories = new ObservableCollection<CategoryDto>();
             Variants = new ObservableCollection<ProductVariantViewModel>();
             Options = new ObservableCollection<ProductOptionViewModel>();
+            Options.CollectionChanged += (s, e) => UpdateVariantOptionsHeader(); // Update header when collection changes
 
             SaveCommand = new RelayCommand(async _ => await SaveItem(), _ => CanSave());
             CancelCommand = new RelayCommand(_ => CloseWindow?.Invoke());
@@ -91,6 +103,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
             GenerateVariantsCommand = new RelayCommand(_ => GenerateVariants());
 
             _ = LoadCategoriesAsync();
+            UpdateVariantOptionsHeader();
         }
 
         private void AddOption()
@@ -109,6 +122,19 @@ namespace Inventory.Presentation.Wpf.ViewModels
                 OnPropertyChanged(nameof(HasOptions));
             }
         }
+
+        private void UpdateVariantOptionsHeader()
+        {
+            if (Options.Any())
+            {
+                VariantOptionsHeader = string.Join(" / ", Options.Select(o => o.Name));
+            }
+            else
+            {
+                VariantOptionsHeader = "Variant"; // Fallback to default
+            }
+        }
+
         private void GenerateVariants()
         {
             if (!Options.Any() || Options.Any(o => string.IsNullOrWhiteSpace(o.Values)))
@@ -133,9 +159,30 @@ namespace Inventory.Presentation.Wpf.ViewModels
             foreach (var combo in combinations)
             {
                 var variation = string.Join(" / ", combo);
-                if (existingVariants.TryGetValue(variation, out var existing))
+                ProductVariantViewModel? bestMatch = null;
+
+                foreach (var existingVariant in existingVariants.Values)
                 {
-                    Variants.Add(existing);
+                    var existingOptions = existingVariant.Variation.Split(new[] { " / " }, StringSplitOptions.None).ToList();
+                    if (existingOptions.All(opt => combo.Contains(opt)))
+                    {
+                        if (bestMatch == null || existingOptions.Count > bestMatch.Variation.Split(new[] { " / " }, StringSplitOptions.None).Count())
+                        {
+                            bestMatch = existingVariant;
+                        }
+                    }
+                }
+
+                if (bestMatch != null)
+                {
+                    Variants.Add(new ProductVariantViewModel
+                    {
+                        Variation = variation,
+                        Sku = bestMatch.Sku,
+                        Quantity = bestMatch.Quantity,
+                        Price = bestMatch.Price
+                    });
+                    existingVariants.Remove(bestMatch.Variation);
                 }
                 else
                 {
@@ -147,6 +194,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
                     });
                 }
             }
+            OnPropertyChanged(nameof(HasVariants));
         }
 
         private List<List<string>> GetCartesianProduct(List<List<string>> sequences)
@@ -180,7 +228,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
             IsEditing = true;
             ProductName = product.Name;
             ImagePath = product.Variants.FirstOrDefault()?.ImagePath;
-            SelectedCategory = Categories.FirstOrDefault(c => c.Id == product.Id);
+            SelectedCategory = Categories.FirstOrDefault(c => c.Name == product.CategoryName);
 
             Variants.Clear();
             foreach (var variant in product.Variants)
@@ -193,6 +241,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
                     Variation = string.Join(" / ", variant.Variation)
                 });
             }
+            OnPropertyChanged(nameof(HasVariants));
 
             Options.Clear();
             if (product.OptionNames != null && product.OptionNames.Any())
@@ -216,6 +265,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
                 }
             }
             OnPropertyChanged(nameof(HasOptions));
+            UpdateVariantOptionsHeader(); // Update header on load
         }
 
         private async Task SaveItem()
