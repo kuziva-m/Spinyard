@@ -6,10 +6,13 @@
         xmlns:local="clr-namespace:Inventory.Presentation.Wpf.Views"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        Title="{Binding WindowTitle}" Height="Auto" Width="600"
-        SizeToContent="Height"
+        Title="{Binding WindowTitle}"
+        Width="750"
+        Height="700"
+        MinHeight="500"
+        MaxHeight="800"
+        x:Name="AddEditWindow"
         WindowStartupLocation="CenterOwner"
-        WindowStyle="ToolWindow"
         TextElement.Foreground="{DynamicResource MaterialDesign.Brush.OnBackground}"
         Background="{DynamicResource MaterialDesign.Brush.Background}">
 
@@ -17,13 +20,13 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
 
-    <Grid Margin="24">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24,24,24,0">
             <StackPanel>
                 <materialDesign:Card Padding="16">
                     <StackPanel>
@@ -51,7 +54,7 @@
                     </StackPanel>
                 </materialDesign:Card>
 
-                <materialDesign:Card Padding="16" Margin="0,16,0,0">
+                <materialDesign:Card Padding="16" Margin="0,16,0,24">
                     <StackPanel>
                         <TextBlock Style="{StaticResource MaterialDesignHeadline6TextBlock}" Text="Product Variants" Margin="0,0,0,4"/>
                         <TextBlock Style="{StaticResource MaterialDesignBody2TextBlock}" Text="Define options like Size or Color, then generate variants." Margin="0,0,0,16"/>
@@ -96,10 +99,17 @@
 
                         <DataGrid ItemsSource="{Binding Variants}" AutoGenerateColumns="False" CanUserAddRows="False" Margin="0,16,0,0"
                                   Style="{StaticResource MaterialDesignDataGrid}"
-                                  Visibility="{Binding Variants.Count, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                  Visibility="{Binding HasVariants, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Variant" Binding="{Binding Variation}" IsReadOnly="True" Width="2*"/>
-                                <DataGridTextColumn Header="SKU" Binding="{Binding Sku}" Width="*"/>
+
+                                <DataGridTemplateColumn Header="{Binding DataContext.VariantOptionsHeader, ElementName=AddEditWindow}" Width="2.5*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Variation}" VerticalAlignment="Center" Margin="12,0,12,0"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="SKU" Binding="{Binding Sku}" Width="1.5*"/>
                                 <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=C}" Width="*"/>
                                 <DataGridTextColumn Header="Quantity" Binding="{Binding Quantity}" Width="*"/>
                             </DataGrid.Columns>
@@ -109,9 +119,11 @@
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
-            <Button Content="Save" Command="{Binding SaveCommand}" Style="{StaticResource MaterialDesignRaisedButton}" IsDefault="True" Width="100"/>
-            <Button Content="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" IsCancel="True" Width="100" Margin="16,0,0,0"/>
-        </StackPanel>
+        <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource MaterialDesign.Brush.Dividers}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,16">
+                <Button Content="Save" Command="{Binding SaveCommand}" Style="{StaticResource MaterialDesignRaisedButton}" IsDefault="True" Width="100"/>
+                <Button Content="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" IsCancel="True" Width="100" Margin="16,0,0,0"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>
