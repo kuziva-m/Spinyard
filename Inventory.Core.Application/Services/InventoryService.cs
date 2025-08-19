@@ -1,19 +1,19 @@
-﻿using Inventory.Core.Application.DTOs;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Inventory.Core.Application.DTOs;
 using Inventory.Core.Application.Interfaces;
 using Inventory.Core.Domain.Entities;
 using Inventory.Core.Domain.Interfaces;
-using System.Collections.ObjectModel;
 
 namespace Inventory.Core.Application.Services
 {
-    public class InventoryService : IInventoryService
+    public class InventoryService(IUnitOfWork unitOfWork) : IInventoryService
     {
-        private readonly IUnitOfWork _unitOfWork;
-
-        public InventoryService(IUnitOfWork unitOfWork)
-        {
-            _unitOfWork = unitOfWork;
-        }
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
         public async Task CreateProductAsync(ProductCreateDto productDto)
         {
@@ -37,27 +37,27 @@ namespace Inventory.Core.Application.Services
 
             foreach (var variantDto in productDto.Variants)
             {
-                var newVariant = new ProductVariant
+                var optionNames = productDto.OptionNames?.Split(',') ?? [];
+
+                newProduct.Variants.Add(new ProductVariant
                 {
                     SKU = variantDto.Sku,
                     Quantity = variantDto.Quantity,
                     Price = variantDto.Price,
                     ImagePath = finalImagePath,
-                    ThumbnailImagePath = finalImagePath
-                };
-
-                var optionNames = productDto.OptionNames?.Split(',') ?? Array.Empty<string>();
-                for (int i = 0; i < variantDto.Variation.Count; i++)
-                {
-                    var optionName = i < optionNames.Length ? optionNames[i].Trim() : $"Option {i + 1}";
-                    var optionValue = variantDto.Variation[i];
-                    newVariant.AttributeOptions.Add(new AttributeOption
-                    {
-                        Attribute = new Domain.Entities.Attribute { Name = optionName },
-                        Value = optionValue
-                    });
-                }
-                newProduct.Variants.Add(newVariant);
+                    ThumbnailImagePath = finalImagePath,
+                    AttributeOptions = [
+                        .. variantDto.Variation
+                            .Select((optionValue, i) => new AttributeOption
+                            {
+                                Attribute = new Domain.Entities.Attribute
+                                {
+                                    Name = i < optionNames.Length ? optionNames[i].Trim() : $"Option {i + 1}"
+                                },
+                                Value = optionValue
+                            })
+                    ]
+                });
             }
 
             await _unitOfWork.Products.AddProductWithVariantsAsync(newProduct);
@@ -69,6 +69,7 @@ namespace Inventory.Core.Application.Services
             var products = await _unitOfWork.Products.GetAllProductsWithDetailsAsync();
             return products.Select(MapProductToDto);
         }
+
         public async Task<IEnumerable<CategoryDto>> GetCategoriesAsync()
         {
             var categories = await _unitOfWork.Categories.GetAllAsync();
@@ -99,27 +100,27 @@ namespace Inventory.Core.Application.Services
 
             foreach (var variantDto in productDto.Variants)
             {
-                var newVariant = new ProductVariant
+                var optionNames = productDto.OptionNames?.Split(',') ?? [];
+
+                product.Variants.Add(new ProductVariant
                 {
                     SKU = variantDto.Sku,
                     Quantity = variantDto.Quantity,
                     Price = variantDto.Price,
                     ImagePath = finalImagePath,
-                    ThumbnailImagePath = finalImagePath
-                };
-
-                var optionNames = productDto.OptionNames?.Split(',') ?? Array.Empty<string>();
-                for (int i = 0; i < variantDto.Variation.Count; i++)
-                {
-                    var optionName = i < optionNames.Length ? optionNames[i].Trim() : $"Option {i + 1}";
-                    var optionValue = variantDto.Variation[i];
-                    newVariant.AttributeOptions.Add(new AttributeOption
-                    {
-                        Attribute = new Domain.Entities.Attribute { Name = optionName },
-                        Value = optionValue
-                    });
-                }
-                product.Variants.Add(newVariant);
+                    ThumbnailImagePath = finalImagePath,
+                    AttributeOptions = [
+                        .. variantDto.Variation
+                            .Select((optionValue, i) => new AttributeOption
+                            {
+                                Attribute = new Domain.Entities.Attribute
+                                {
+                                    Name = i < optionNames.Length ? optionNames[i].Trim() : $"Option {i + 1}"
+                                },
+                                Value = optionValue
+                            })
+                    ]
+                });
             }
 
             // Call the new repository method
@@ -133,6 +134,7 @@ namespace Inventory.Core.Application.Services
         {
             var productToDelete = await _unitOfWork.Products.GetProductWithDetailsAsync(productId);
             if (productToDelete == null) return;
+
             foreach (var variant in productToDelete.Variants)
             {
                 if (!string.IsNullOrEmpty(variant.ImagePath) && File.Exists(variant.ImagePath))
@@ -144,6 +146,7 @@ namespace Inventory.Core.Application.Services
                     File.Delete(variant.ThumbnailImagePath);
                 }
             }
+
             _unitOfWork.Products.Remove(productToDelete);
             await _unitOfWork.CompleteAsync();
         }
@@ -163,7 +166,7 @@ namespace Inventory.Core.Application.Services
                 Price = v.Price ?? 0,
                 ImagePath = v.ImagePath,
                 ThumbnailImagePath = v.ThumbnailImagePath,
-                Variation = v.AttributeOptions.Select(ao => ao.Value).ToList()
+                Variation = [.. v.AttributeOptions.Select(ao => ao.Value)]
             }).ToList();
 
             return new ProductDto
@@ -174,7 +177,10 @@ namespace Inventory.Core.Application.Services
                 CategoryName = product.Category?.Name ?? "N/A",
                 Variants = new ObservableCollection<ProductVariantDto>(variants),
                 OptionNames = product.OptionNames,
-                VariantsDisplay = string.Join(", ", variants.Select(v => string.Join(" / ", v.Variation)).Where(s => !string.IsNullOrEmpty(s)).Take(3))
+                VariantsDisplay = string.Join(", ",
+                    variants.Select(v => string.Join(" / ", v.Variation))
+                            .Where(s => !string.IsNullOrEmpty(s))
+                            .Take(3))
             };
         }
     }

@@ -28,6 +28,8 @@ namespace Inventory.Presentation.Wpf.ViewModels
 
     public class AddEditItemViewModel : ViewModelBase
     {
+        private static readonly string[] OptionSplitSeparator = [" / "];
+
         private readonly IInventoryService _inventoryService;
         private int _productId;
         private string _productName = "";
@@ -44,7 +46,9 @@ namespace Inventory.Presentation.Wpf.ViewModels
             set { _imagePath = value; OnPropertyChanged(); }
         }
 
-        public ObservableCollection<CategoryDto> Categories { get; }
+        public ObservableCollection<CategoryDto> Categories { get; } = [];
+        public ObservableCollection<ProductVariantViewModel> Variants { get; } = [];
+        public ObservableCollection<ProductOptionViewModel> Options { get; } = [];
 
         private CategoryDto? _selectedCategory;
         public CategoryDto? SelectedCategory
@@ -52,9 +56,6 @@ namespace Inventory.Presentation.Wpf.ViewModels
             get => _selectedCategory;
             set { _selectedCategory = value; OnPropertyChanged(); }
         }
-
-        public ObservableCollection<ProductVariantViewModel> Variants { get; }
-        public ObservableCollection<ProductOptionViewModel> Options { get; }
 
         private string _newOptionName = string.Empty;
         public string NewOptionName
@@ -87,15 +88,12 @@ namespace Inventory.Presentation.Wpf.ViewModels
         public Action? CloseWindow { get; set; }
 
         public string WindowTitle => IsEditing ? "Edit Item" : "Add Item";
-        public bool HasOptions => Options.Any();
-        public bool HasVariants => Variants.Any();
+        public bool HasOptions => Options.Count > 0;
+        public bool HasVariants => Variants.Count > 0;
 
         public AddEditItemViewModel(IInventoryService inventoryService)
         {
             _inventoryService = inventoryService;
-            Categories = new ObservableCollection<CategoryDto>();
-            Variants = new ObservableCollection<ProductVariantViewModel>();
-            Options = new ObservableCollection<ProductOptionViewModel>();
             Options.CollectionChanged += (s, e) => UpdateVariantOptionsHeader();
 
             SaveCommand = new RelayCommand(async _ => await SaveItem(), _ => CanSave());
@@ -128,7 +126,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
 
         private void UpdateVariantOptionsHeader()
         {
-            if (Options.Any())
+            if (Options.Count > 0)
             {
                 VariantOptionsHeader = string.Join(" / ", Options.Select(o => o.Name));
             }
@@ -140,7 +138,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
 
         private void GenerateVariants()
         {
-            if (!Options.Any() || Options.Any(o => string.IsNullOrWhiteSpace(o.Values)))
+            if (Options.Count == 0 || Options.Any(o => string.IsNullOrWhiteSpace(o.Values)))
                 return;
 
             var optionValueLists = Options
@@ -151,7 +149,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
                     .ToList())
                 .ToList();
 
-            if (optionValueLists.Any(list => !list.Any()))
+            if (optionValueLists.Count == 0)
                 return;
 
             // ✅ FIXED: Get the option names string once.
@@ -169,10 +167,10 @@ namespace Inventory.Presentation.Wpf.ViewModels
 
                 foreach (var existingVariant in existingVariants.Values)
                 {
-                    var existingOptions = existingVariant.OptionValues.Split(new[] { " / " }, StringSplitOptions.None).ToList();
+                    var existingOptions = existingVariant.OptionValues.Split(OptionSplitSeparator, StringSplitOptions.None).ToList();
                     if (existingOptions.All(opt => combo.Contains(opt)))
                     {
-                        if (bestMatch == null || existingOptions.Count > bestMatch.OptionValues.Split(new[] { " / " }, StringSplitOptions.None).Count())
+                        if (bestMatch == null || existingOptions.Count > bestMatch.OptionValues.Split(OptionSplitSeparator, StringSplitOptions.None).ToList().Count)
                         {
                             bestMatch = existingVariant;
                         }
@@ -207,12 +205,12 @@ namespace Inventory.Presentation.Wpf.ViewModels
             OnPropertyChanged(nameof(HasVariants));
         }
 
-        private List<List<string>> GetCartesianProduct(List<List<string>> sequences)
+        private static List<List<string>> GetCartesianProduct(List<List<string>> sequences)
         {
             var result = new List<List<string>>();
-            if (!sequences.Any())
+            if (sequences.Count == 0)
             {
-                result.Add(new List<string>());
+                result.Add([]);
                 return result;
             }
 
@@ -241,7 +239,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
             SelectedCategory = Categories.FirstOrDefault(c => c.Name == product.CategoryName);
 
             // ✅ FIXED: Logic for loading existing products.
-            var optionNames = product.OptionNames?.Split(',').Select(n => n.Trim()).ToList() ?? new List<string>();
+            var optionNames = product.OptionNames?.Split(',').Select(n => n.Trim()).ToList() ?? [];
             var optionNamesStr = string.Join(" / ", optionNames);
 
             Variants.Clear();
@@ -260,7 +258,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
             OnPropertyChanged(nameof(HasVariants));
 
             Options.Clear();
-            if (product.OptionNames != null && product.OptionNames.Any())
+            if (!string.IsNullOrEmpty(product.OptionNames))
             {
                 var allVariantsOptions = product.Variants.Select(v => v.Variation).ToList();
 
@@ -295,14 +293,13 @@ namespace Inventory.Presentation.Wpf.ViewModels
                     ProductName = this.ProductName,
                     CategoryId = this.SelectedCategory.Id,
                     ImagePath = this.ImagePath,
-                    Variants = new List<ProductVariantCreateDto>(
-                        Variants.Select(v => new ProductVariantCreateDto
+                    Variants = [.. Variants.Select(static v => new ProductVariantCreateDto
                         {
                             Sku = v.Sku,
                             Price = v.Price,
                             Quantity = v.Quantity,
-                            Variation = v.OptionValues.Split(new[] { " / " }, StringSplitOptions.None).ToList()
-                        })),
+                            Variation = [.. v.OptionValues.Split(OptionSplitSeparator, StringSplitOptions.None)]
+                        })],
                     OptionNames = optionNames
                 };
                 await _inventoryService.CreateProductAsync(newProductDto);
@@ -315,14 +312,13 @@ namespace Inventory.Presentation.Wpf.ViewModels
                     ProductName = this.ProductName,
                     CategoryId = this.SelectedCategory.Id,
                     ImagePath = this.ImagePath,
-                    Variants = new List<ProductVariantDto>(
-                    Variants.Select(v => new ProductVariantDto
+                    Variants = [.. Variants.Select(v => new ProductVariantDto
                     {
                         Sku = v.Sku,
                         Quantity = v.Quantity,
                         Price = v.Price,
-                        Variation = v.OptionValues.Split(new[] { " / " }, StringSplitOptions.None).ToList()
-                    })),
+                        Variation = [.. v.OptionValues.Split(OptionSplitSeparator, StringSplitOptions.None)]
+                    })],
                     OptionNames = optionNames
                 };
                 await _inventoryService.UpdateProductAsync(updateProductDto);
