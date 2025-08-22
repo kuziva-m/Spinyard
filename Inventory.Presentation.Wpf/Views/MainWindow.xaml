@@ -3,154 +3,24 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Inventory.Presentation.Wpf.Views"
-        xmlns:converters="clr-namespace:Inventory.Presentation.Wpf.Converters"
-        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:views="clr-namespace:Inventory.Presentation.Wpf.Views"
+        xmlns:viewModels="clr-namespace:Inventory.Presentation.Wpf.ViewModels"
         mc:Ignorable="d"
         Title="Inventory Management System"
-        Height="650" Width="1100" MinHeight="600" MinWidth="900"
+        Height="700" Width="1200" MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen"
         TextElement.Foreground="{DynamicResource MaterialDesign.Brush.OnBackground}"
         Background="{DynamicResource MaterialDesign.Brush.Background}">
 
     <Window.Resources>
-        <converters:StringListToStringConverter x:Key="StringListConverter"/>
-
-        <Style x:Key="VariantsTextStyle" TargetType="TextBlock" BasedOn="{StaticResource MaterialDesignBody1TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource MaterialDesign.Brush.OnBackground}" />
-            <Setter Property="Margin" Value="0,4,0,4"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-        </Style>
-
-        <!-- Alternating row style for inner DataGrid -->
-        <SolidColorBrush x:Key="AlternateRowBackground" Color="#FAFAFA"/>
-        <Style TargetType="DataGridRow" x:Key="AlternatingRowStyle" BasedOn="{StaticResource MaterialDesignDataGridRow}">
-            <Setter Property="Background" Value="{x:Null}" />
-            <Style.Triggers>
-                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
-                    <Setter Property="Background" Value="{StaticResource AlternateRowBackground}" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        <DataTemplate DataType="{x:Type viewModels:DashboardViewModel}">
+            <views:DashboardView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:InventoryViewModel}">
+            <views:InventoryView />
+        </DataTemplate>
     </Window.Resources>
 
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <ContentControl Content="{Binding CurrentViewModel}" />
 
-        <!-- Toolbar -->
-        <materialDesign:Card Grid.Row="0" Margin="0,0,0,16" Padding="8" VerticalAlignment="Center">
-            <DockPanel>
-                <!-- Left-aligned buttons -->
-                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
-                    <Button Style="{StaticResource MaterialDesignRaisedButton}" Command="{Binding AddItemCommand}" ToolTip="Add a new inventory item." Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <materialDesign:PackIcon Kind="Add" Margin="0,0,8,0" />
-                            <TextBlock Text="Add Item" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignOutlinedButton}" Command="{Binding EditItemCommand}" ToolTip="Edit the selected item." Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <materialDesign:PackIcon Kind="Pencil" Margin="0,0,8,0" />
-                            <TextBlock Text="Edit Item" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignOutlinedButton}" Command="{Binding DeleteItemCommand}" ToolTip="Delete the selected item." Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <materialDesign:PackIcon Kind="DeleteOutline" Margin="0,0,8,0" />
-                            <TextBlock Text="Delete Item" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-
-                <!-- Right-aligned filters -->
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,0,0,0">
-                    <TextBox materialDesign:HintAssist.Hint="Search..."
-                             Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
-                             Width="200" VerticalContentAlignment="Center"
-                             ToolTip="Search by product name or SKU." Margin="0,0,8,0"
-                             Style="{StaticResource MaterialDesignOutlinedTextBox}" />
-
-                    <ComboBox materialDesign:HintAssist.Hint="Filter by category"
-                              ItemsSource="{Binding FilterCategories}"
-                              DisplayMemberPath="Name"
-                              SelectedItem="{Binding SelectedFilterCategory}"
-                              Width="200" ToolTip="Filter by category." Margin="0,0,8,0"
-                              Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
-
-                    <Button Command="{Binding SearchCommand}" ToolTip="Apply search filters" Style="{StaticResource MaterialDesignFlatButton}" Margin="0,0,8,0">
-                        <materialDesign:PackIcon Kind="Magnify" />
-                    </Button>
-
-                    <Button Command="{Binding ClearFilterCommand}" ToolTip="Clear search and category filters" Style="{StaticResource MaterialDesignToolButton}" Margin="0,0,8,0">
-                        <materialDesign:PackIcon Kind="FilterRemoveOutline" />
-                    </Button>
-                </StackPanel>
-
-                <!-- Center-aligned action -->
-                <Button Style="{StaticResource MaterialDesignFlatButton}" Command="{Binding LoadAllInventoryCommand}" ToolTip="Load all inventory items." HorizontalAlignment="Center">
-                    Load All
-                </Button>
-            </DockPanel>
-        </materialDesign:Card>
-
-        <!-- Main DataGrid -->
-        <materialDesign:Card Grid.Row="1" materialDesign:ElevationAssist.Elevation="Dp2" Padding="8">
-            <DataGrid ItemsSource="{Binding Products}"
-                      SelectedItem="{Binding SelectedProduct}"
-                      Style="{StaticResource MaterialDesignDataGrid}"
-                      CellStyle="{StaticResource MaterialDesignDataGridCell}"
-                      RowStyle="{StaticResource AlternatingRowStyle}"
-                      ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}"
-                      AutoGenerateColumns="False"
-                      IsReadOnly="True"
-                      CanUserAddRows="False"
-                      CanUserSortColumns="True"
-                      AlternationCount="2"
-                      materialDesign:DataGridAssist.CellPadding="10 6"
-                      RowDetailsVisibilityMode="VisibleWhenSelected"
-                      materialDesign:DataGridAssist.ColumnHeaderPadding="8">
-
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="2.5*" />
-                    <DataGridTextColumn Header="Category" Binding="{Binding CategoryName}" Width="1.5*" />
-                    <DataGridTextColumn Header="Total Quantity" Binding="{Binding TotalQuantity}" Width="1*" ElementStyle="{StaticResource MaterialDesignDataGridTextColumnStyle}" />
-                </DataGrid.Columns>
-
-                <!-- Variants details -->
-                <DataGrid.RowDetailsTemplate>
-                    <DataTemplate>
-                        <Border Margin="12" Padding="12" Background="{DynamicResource MaterialDesign.Paper}" CornerRadius="6">
-                            <StackPanel>
-                                <TextBlock Text="Product Variants"
-                                           Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                                           Margin="0,0,0,12" />
-
-                                <DataGrid ItemsSource="{Binding Variants}"
-                                          AutoGenerateColumns="False"
-                                          IsReadOnly="True"
-                                          CanUserAddRows="False"
-                                          HeadersVisibility="Column"
-                                          MaxHeight="300"
-                                          HorizontalScrollBarVisibility="Auto"
-                                          RowHeaderWidth="0"
-                                          Style="{StaticResource MaterialDesignDataGrid}"
-                                          materialDesign:DataGridAssist.CellPadding="6 4"
-                                          materialDesign:DataGridAssist.ColumnHeaderPadding="4">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="SKU" Binding="{Binding Sku}" Width="*" MinWidth="100"/>
-                                        <DataGridTextColumn Header="Variation" Binding="{Binding Variation, Converter={StaticResource StringListConverter}}" Width="2*" MinWidth="150"/>
-                                        <DataGridTextColumn Header="Quantity" Binding="{Binding Quantity}" Width="*" MinWidth="80"/>
-                                        <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=C}" Width="*" MinWidth="100"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </DataGrid.RowDetailsTemplate>
-            </DataGrid>
-        </materialDesign:Card>
-    </Grid>
 </Window>

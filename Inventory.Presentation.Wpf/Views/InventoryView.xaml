@@ -1,0 +1,199 @@
+﻿<UserControl x:Class="Inventory.Presentation.Wpf.Views.InventoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Inventory.Presentation.Wpf.Views"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="1200"
+             Background="#dde5d5">
+
+    <UserControl.Resources>
+        <!-- Consistent DataGrid style -->
+        <Style x:Key="InventoryDataGridStyle"
+               TargetType="DataGrid"
+               BasedOn="{StaticResource MaterialDesignDataGrid}">
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#FFE0E0E0"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#FFE0E0E0"/>
+            <Setter Property="AlternationCount" Value="2"/>
+            <Setter Property="RowStyle" Value="{StaticResource AlternatingRowStyle}"/>
+            <Setter Property="ColumnHeaderStyle" Value="{StaticResource MaterialDesignDataGridColumnHeader}"/>
+            <Setter Property="CellStyle" Value="{StaticResource MaterialDesignDataGridCell}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="48,32,48,32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- HEADER -->
+        <Grid Grid.Row="0" Margin="0,0,0,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Inventory Management"
+                           Style="{StaticResource MaterialDesignHeadline4TextBlock}"
+                           Foreground="#274b14"/>
+                <TextBlock Text="View, search, and manage all products."
+                           Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
+                           Foreground="#738e37"
+                           Opacity="0.8"/>
+            </StackPanel>
+
+            <Button Grid.Column="1"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    Command="{Binding NavigateToDashboardCommand}"
+                    VerticalAlignment="Center"
+                    Foreground="#274b14">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="ArrowLeft" Margin="0,0,8,0"/>
+                    <TextBlock Text="Back to Dashboard"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- ACTION BAR -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource MaterialDesign.Brush.Paper}"
+                CornerRadius="6"
+                BorderThickness="1"
+                BorderBrush="#E0E0E0"
+                Padding="12"
+                Margin="0,0,0,16"
+                materialDesign:ElevationAssist.Elevation="Dp2">
+            <DockPanel>
+                <!-- LEFT: ACTIONS -->
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                            Background="#274b14"
+                            Foreground="White"
+                            Command="{Binding AddItemCommand}"
+                            ToolTip="Add a new inventory item."
+                            Margin="0,0,8,0"
+                            Content="Add New Item"/>
+                    <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Foreground="#274b14"
+                            Command="{Binding EditItemCommand}"
+                            ToolTip="Edit the selected item."
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Pencil" Margin="0,0,8,0"/>
+                            <TextBlock Text="Edit"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Foreground="{DynamicResource MaterialDesign.Brush.Error}"
+                            Command="{Binding DeleteItemCommand}"
+                            ToolTip="Delete the selected item.">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="DeleteOutline" Margin="0,0,8,0"/>
+                            <TextBlock Text="Delete"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- RIGHT: SEARCH + FILTER -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBox materialDesign:HintAssist.Hint="Search..."
+                             Text="{Binding SearchTerm, UpdateSourceTrigger=PropertyChanged}"
+                             Width="200"
+                             VerticalContentAlignment="Center"
+                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                             Margin="0,0,8,0"
+                             Background="{DynamicResource MaterialDesign.Brush.TextFieldBoxBackground}"/>
+                    <ComboBox materialDesign:HintAssist.Hint="Filter by category"
+                              ItemsSource="{Binding FilterCategories}"
+                              DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedFilterCategory}"
+                              Width="200"
+                              Style="{StaticResource MaterialDesignFilledComboBox}"
+                              Background="{DynamicResource MaterialDesign.Brush.TextFieldBoxBackground}"
+                              Margin="0,0,8,0"/>
+                    <Button Command="{Binding SearchCommand}"
+                            ToolTip="Apply search filters"
+                            Style="{StaticResource MaterialDesignToolButton}"
+                            Foreground="#274b14"
+                            Margin="0,0,4,0">
+                        <materialDesign:PackIcon Kind="Magnify"/>
+                    </Button>
+                    <Button Command="{Binding ClearFilterCommand}"
+                            ToolTip="Clear search and category filters"
+                            Style="{StaticResource MaterialDesignToolButton}"
+                            Foreground="#505e21">
+                        <materialDesign:PackIcon Kind="FilterRemoveOutline"/>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- MAIN TABLE -->
+        <materialDesign:Card Grid.Row="2"
+                             materialDesign:ElevationAssist.Elevation="Dp2"
+                             Padding="0"
+                             UniformCornerRadius="6">
+            <DataGrid ItemsSource="{Binding Products}"
+                      SelectedItem="{Binding SelectedProduct}"
+                      Style="{StaticResource InventoryDataGridStyle}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserSortColumns="True"
+                      materialDesign:DataGridAssist.CellPadding="12 8"
+                      materialDesign:DataGridAssist.ColumnHeaderPadding="12 8"
+                      RowDetailsVisibilityMode="VisibleWhenSelected">
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="NAME" Binding="{Binding Name}" Width="2.5*"/>
+                    <DataGridTextColumn Header="CATEGORY" Binding="{Binding CategoryName}" Width="1.5*"/>
+                    <DataGridTextColumn Header="TOTAL QUANTITY"
+                                        Binding="{Binding TotalQuantity}"
+                                        Width="*"
+                                        ElementStyle="{StaticResource MaterialDesignDataGridTextColumnStyle}"/>
+                </DataGrid.Columns>
+
+                <DataGrid.RowDetailsTemplate>
+                    <DataTemplate>
+                        <Border Margin="12"
+                                Padding="16"
+                                Background="{DynamicResource MaterialDesign.Brush.Background}"
+                                CornerRadius="6">
+                            <StackPanel>
+                                <TextBlock Text="Product Variants"
+                                           Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                           Foreground="#274b14"
+                                           Margin="0,0,0,12"/>
+                                <DataGrid ItemsSource="{Binding Variants}"
+                                          Style="{StaticResource InventoryDataGridStyle}"
+                                          HeadersVisibility="Column"
+                                          AutoGenerateColumns="False"
+                                          IsReadOnly="True"
+                                          CanUserAddRows="False"
+                                          materialDesign:DataGridAssist.CellPadding="12 6"
+                                          materialDesign:DataGridAssist.ColumnHeaderPadding="12 6">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="SKU" Binding="{Binding Sku}" Width="*"/>
+                                        <DataGridTextColumn Header="VARIATION"
+                                                            Binding="{Binding Variation, Converter={StaticResource StringListConverter}}"
+                                                            Width="2*"/>
+                                        <DataGridTextColumn Header="QUANTITY" Binding="{Binding Quantity}" Width="*"/>
+                                        <DataGridTextColumn Header="PRICE"
+                                                            Binding="{Binding Price, StringFormat=C}"
+                                                            Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </DataGrid.RowDetailsTemplate>
+            </DataGrid>
+        </materialDesign:Card>
+    </Grid>
+</UserControl>
