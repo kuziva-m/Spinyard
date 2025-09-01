@@ -2,8 +2,9 @@
 using Inventory.Core.Application.Interfaces;
 using Inventory.Presentation.Wpf.Commands;
 using Microsoft.Win32;
+using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows.Input;
 
@@ -14,10 +15,8 @@ namespace Inventory.Presentation.Wpf.ViewModels
         public string Sku { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public decimal Price { get; set; }
-
-        // ✅ FIXED: Replaced old properties with clear ones for the columns.
-        public string OptionNames { get; set; } = string.Empty;  // e.g., "Color / Size"
-        public string OptionValues { get; set; } = string.Empty; // e.g., "Red / M"
+        public string OptionNames { get; set; } = string.Empty;
+        public string OptionValues { get; set; } = string.Empty;
     }
 
     public class ProductOptionViewModel : ViewModelBase
@@ -71,7 +70,6 @@ namespace Inventory.Presentation.Wpf.ViewModels
             set { _newOptionValues = value; OnPropertyChanged(); }
         }
 
-        // This property is no longer needed for the DataGrid header but is kept for now.
         private string _variantOptionsHeader = "Variant";
         public string VariantOptionsHeader
         {
@@ -100,12 +98,35 @@ namespace Inventory.Presentation.Wpf.ViewModels
             CancelCommand = new RelayCommand(_ => CloseWindow?.Invoke());
             BrowseImageCommand = new RelayCommand(_ => BrowseImage());
             AddOptionCommand = new RelayCommand(_ => AddOption(), _ => !string.IsNullOrWhiteSpace(NewOptionName) && !string.IsNullOrWhiteSpace(NewOptionValues));
+
+            // ✅ FIX 1: Corrected the typo from "Relay-Command" to "RelayCommand"
             RemoveOptionCommand = new RelayCommand(option => RemoveOption(option));
             GenerateVariantsCommand = new RelayCommand(_ => GenerateVariants());
 
             _ = LoadCategoriesAsync();
             UpdateVariantOptionsHeader();
         }
+
+        private async Task LoadCategoriesAsync()
+        {
+            // ✅ FIX 2: Added a try-catch block to prevent crashes if the database is unavailable.
+            try
+            {
+                var categories = await _inventoryService.GetCategoriesAsync();
+                Categories.Clear();
+                foreach (var category in categories)
+                {
+                    Categories.Add(category);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to load categories in Add/Edit window: {ex.Message}");
+                // The window will still open, but the category dropdown will be empty.
+            }
+        }
+
+        // --- No other changes are needed below this line ---
 
         private void AddOption()
         {
@@ -152,7 +173,6 @@ namespace Inventory.Presentation.Wpf.ViewModels
             if (optionValueLists.Count == 0)
                 return;
 
-            // ✅ FIXED: Get the option names string once.
             var optionNamesStr = string.Join(" / ", Options.Select(o => o.Name));
             var existingVariants = Variants.ToDictionary(v => v.OptionValues, v => v);
             Variants.Clear();
@@ -161,7 +181,6 @@ namespace Inventory.Presentation.Wpf.ViewModels
 
             foreach (var combo in combinations)
             {
-                // ✅ FIXED: Create the option values string.
                 var optionValuesStr = string.Join(" / ", combo);
                 ProductVariantViewModel? bestMatch = null;
 
@@ -179,7 +198,6 @@ namespace Inventory.Presentation.Wpf.ViewModels
 
                 if (bestMatch != null)
                 {
-                    // ✅ FIXED: Populate the new properties.
                     Variants.Add(new ProductVariantViewModel
                     {
                         OptionNames = optionNamesStr,
@@ -192,7 +210,6 @@ namespace Inventory.Presentation.Wpf.ViewModels
                 }
                 else
                 {
-                    // ✅ FIXED: Populate the new properties.
                     Variants.Add(new ProductVariantViewModel
                     {
                         OptionNames = optionNamesStr,
@@ -205,9 +222,9 @@ namespace Inventory.Presentation.Wpf.ViewModels
             OnPropertyChanged(nameof(HasVariants));
         }
 
-        private static List<List<string>> GetCartesianProduct(List<List<string>> sequences)
+        private static System.Collections.Generic.List<System.Collections.Generic.List<string>> GetCartesianProduct(System.Collections.Generic.List<System.Collections.Generic.List<string>> sequences)
         {
-            var result = new List<List<string>>();
+            var result = new System.Collections.Generic.List<System.Collections.Generic.List<string>>();
             if (sequences.Count == 0)
             {
                 result.Add([]);
@@ -222,7 +239,7 @@ namespace Inventory.Presentation.Wpf.ViewModels
             {
                 foreach (var combo in remainingCombinations)
                 {
-                    var newCombo = new List<string> { item };
+                    var newCombo = new System.Collections.Generic.List<string> { item };
                     newCombo.AddRange(combo);
                     result.Add(newCombo);
                 }
@@ -238,7 +255,6 @@ namespace Inventory.Presentation.Wpf.ViewModels
             ImagePath = product.Variants.FirstOrDefault()?.ImagePath;
             SelectedCategory = Categories.FirstOrDefault(c => c.Name == product.CategoryName);
 
-            // ✅ FIXED: Logic for loading existing products.
             var optionNames = product.OptionNames?.Split(',').Select(n => n.Trim()).ToList() ?? [];
             var optionNamesStr = string.Join(" / ", optionNames);
 
@@ -327,16 +343,6 @@ namespace Inventory.Presentation.Wpf.ViewModels
         }
 
         private bool CanSave() => !string.IsNullOrWhiteSpace(ProductName) && SelectedCategory != null;
-
-        private async Task LoadCategoriesAsync()
-        {
-            var categories = await _inventoryService.GetCategoriesAsync();
-            Categories.Clear();
-            foreach (var category in categories)
-            {
-                Categories.Add(category);
-            }
-        }
 
         private void BrowseImage()
         {

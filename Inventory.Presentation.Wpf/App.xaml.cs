@@ -7,6 +7,7 @@ using Inventory.Presentation.Wpf.Views;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Npgsql;
 using System.IO;
 using System.Windows;
 
@@ -62,19 +63,29 @@ namespace Inventory.Presentation.Wpf
         {
             await _host.StartAsync();
 
-            using (var scope = _host.Services.CreateScope())
+            try
             {
-                var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
-                // Apply any pending migrations to the database
-                await dbContext.Database.MigrateAsync();
+                using (var scope = _host.Services.CreateScope())
+                {
+                    var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
+                    // Apply any pending migrations to the database
+                    await dbContext.Database.MigrateAsync();
+                }
+            }
+            catch (PostgresException ex)
+            {
+                MessageBox.Show($"Database connection error: {ex.Message}\nThe application will start without database functionality.", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An unexpected error occurred during database migration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
-            // --- FIX 2: Properly initialize the view model ---
             var mainViewModel = _host.Services.GetRequiredService<MainViewModel>();
-            await mainViewModel.InitializeAsync(); // We will create this method next
+            await mainViewModel.InitializeAsync();
 
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-            mainWindow.DataContext = mainViewModel; // Explicitly set the DataContext
+            mainWindow.DataContext = mainViewModel;
             mainWindow.Show();
 
             base.OnStartup(e);

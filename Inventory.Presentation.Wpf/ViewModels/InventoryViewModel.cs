@@ -1,7 +1,9 @@
 ﻿using Inventory.Core.Application.DTOs;
 using Inventory.Core.Application.Interfaces;
 using Inventory.Presentation.Wpf.Commands;
+using Npgsql;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -59,12 +61,23 @@ namespace Inventory.Presentation.Wpf.ViewModels
 
         private async Task LoadFilterCategoriesAsync()
         {
-            var categories = await _inventoryService.GetCategoriesAsync();
-            FilterCategories.Clear();
-            FilterCategories.Add(new CategoryDto { Id = 0, Name = "All Categories" });
-            foreach (var category in categories)
+            try
             {
-                FilterCategories.Add(category);
+                var categories = await _inventoryService.GetCategoriesAsync();
+                FilterCategories.Clear();
+                FilterCategories.Add(new CategoryDto { Id = 0, Name = "All Categories" });
+                foreach (var category in categories)
+                {
+                    FilterCategories.Add(category);
+                }
+            }
+            catch (PostgresException ex)
+            {
+                Debug.WriteLine($"Database error loading categories: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"An unexpected error occurred loading categories: {ex.Message}");
             }
         }
 
@@ -87,29 +100,62 @@ namespace Inventory.Presentation.Wpf.ViewModels
             var result = MessageBox.Show($"Are you sure you want to delete '{SelectedProduct.Name}'?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result == MessageBoxResult.Yes)
             {
-                await _inventoryService.DeleteProductAsync(SelectedProduct.Id);
-                await LoadProducts();
+                try
+                {
+                    await _inventoryService.DeleteProductAsync(SelectedProduct.Id);
+                    await LoadProducts();
+                }
+                catch (PostgresException ex)
+                {
+                    MessageBox.Show($"Database error: {ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
         private async Task LoadProducts()
         {
-            int? categoryId = (SelectedFilterCategory == null || SelectedFilterCategory.Id == 0) ? null : SelectedFilterCategory.Id;
-            var products = await _inventoryService.SearchProductsAsync(SearchTerm, categoryId);
-            Products.Clear();
-            foreach (var product in products)
+            try
             {
-                Products.Add(product);
+                int? categoryId = (SelectedFilterCategory == null || SelectedFilterCategory.Id == 0) ? null : SelectedFilterCategory.Id;
+                var products = await _inventoryService.SearchProductsAsync(SearchTerm, categoryId);
+                Products.Clear();
+                foreach (var product in products)
+                {
+                    Products.Add(product);
+                }
+            }
+            catch (PostgresException ex)
+            {
+                Debug.WriteLine($"Database error loading products: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"An unexpected error occurred loading products: {ex.Message}");
             }
         }
 
         private async Task LoadAllInventory()
         {
-            var products = await _inventoryService.GetAllProductsAsync();
-            Products.Clear();
-            foreach (var product in products)
+            try
             {
-                Products.Add(product);
+                var products = await _inventoryService.GetAllProductsAsync();
+                Products.Clear();
+                foreach (var product in products)
+                {
+                    Products.Add(product);
+                }
+            }
+            catch (PostgresException ex)
+            {
+                Debug.WriteLine($"Database error loading inventory: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"An unexpected error occurred loading inventory: {ex.Message}");
             }
         }
 

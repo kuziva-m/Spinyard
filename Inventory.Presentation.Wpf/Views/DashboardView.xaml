@@ -59,10 +59,10 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="48,32,48,16">
-            <TextBlock Text="Welcome Back!" 
+            <TextBlock Text="Welcome Back!"
                        Style="{StaticResource MaterialDesignHeadline4TextBlock}"
                        Foreground="#274b14"/>
-            <TextBlock Text="Select an option below to get started." 
+            <TextBlock Text="Select an option below to get started."
                        Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
                        Foreground="#738e37"
                        Opacity="0.8"/>
@@ -79,7 +79,7 @@
                 <materialDesign:Card.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToInventoryCommand}" />
                 </materialDesign:Card.InputBindings>
-                <StackPanel VerticalAlignment="Center">
+                <StackPanel VerticalAlignment="Center" Background="Transparent">
                     <materialDesign:PackIcon Kind="ViewDashboard" Style="{StaticResource CardIconStyle}"/>
                     <TextBlock Text="Manage Inventory" Style="{StaticResource CardTitleStyle}"/>
                     <TextBlock Text="View, search, and edit all products and their variants." Style="{StaticResource CardDescriptionStyle}"/>
@@ -90,7 +90,7 @@
                 <materialDesign:Card.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding AddNewProductCommand}" />
                 </materialDesign:Card.InputBindings>
-                <StackPanel VerticalAlignment="Center">
+                <StackPanel VerticalAlignment="Center" Background="Transparent">
                     <materialDesign:PackIcon Kind="PackageVariantPlus" Style="{StaticResource CardIconStyle}"/>
                     <TextBlock Text="Add New Product" Style="{StaticResource CardTitleStyle}"/>
                     <TextBlock Text="Create a new product entry with variants, stock, and details." Style="{StaticResource CardDescriptionStyle}"/>
@@ -101,7 +101,7 @@
                 <materialDesign:Card.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToSettingsCommand}" />
                 </materialDesign:Card.InputBindings>
-                <StackPanel VerticalAlignment="Center">
+                <StackPanel VerticalAlignment="Center" Background="Transparent">
                     <materialDesign:PackIcon Kind="Cog" Style="{StaticResource CardIconStyle}"/>
                     <TextBlock Text="Settings" Style="{StaticResource CardTitleStyle}"/>
                     <TextBlock Text="Configure application preferences and user settings." Style="{StaticResource CardDescriptionStyle}"/>

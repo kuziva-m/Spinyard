@@ -17,7 +17,14 @@
         Background="{DynamicResource MaterialDesign.Brush.Background}">
 
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        </ResourceDictionary>
     </Window.Resources>
 
     <Grid>
@@ -57,7 +64,8 @@
                 <materialDesign:Card Padding="16" Margin="0,16,0,24">
                     <StackPanel>
                         <TextBlock Style="{StaticResource MaterialDesignHeadline6TextBlock}" Text="Product Variants" Margin="0,0,0,4"/>
-                        <TextBlock Style="{StaticResource MaterialDesignBody2TextBlock}" Text="Define options like Size or Color, then generate variants." Margin="0,0,0,16"/>
+                        <TextBlock Style="{StaticResource MaterialDesignBody2TextBlock}" Text="Define options like Size or Color, then generate variants."
+                                   Margin="0,0,0,16"/>
 
                         <Grid>
                             <Grid.ColumnDefinitions>
