@@ -15,5 +15,11 @@ namespace Inventory.Core.Application.Interfaces
         Task DeleteProductAsync(int productId);
 
         Task<IEnumerable<ProductDto>> SearchProductsAsync(string? searchTerm, int? categoryId);
+
+        Task AddCategoryAsync(CategoryCreateDto categoryDto);
+
+        Task UpdateCategoryAsync(CategoryUpdateDto categoryDto);
+
+        Task DeleteCategoryAsync(int categoryId);
     }
 }

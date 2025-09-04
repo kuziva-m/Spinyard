@@ -14,21 +14,27 @@ namespace Inventory.Presentation.Wpf.ViewModels
         }
 
         private readonly InventoryViewModel _inventoryViewModel;
+        private readonly SettingsViewModel _settingsViewModel;
 
         public MainViewModel(
             DashboardViewModel dashboardViewModel,
-            InventoryViewModel inventoryViewModel)
+            InventoryViewModel inventoryViewModel,
+            SettingsViewModel settingsViewModel)
         {
             _inventoryViewModel = inventoryViewModel;
-
-            // --- FIX: Initialize the field directly to satisfy the compiler ---
             _currentViewModel = dashboardViewModel;
+            _settingsViewModel = settingsViewModel;
 
             // Set up the commands that the Dashboard will use
             dashboardViewModel.NavigateToInventoryCommand = new RelayCommand(_ => CurrentViewModel = _inventoryViewModel);
-            dashboardViewModel.NavigateToSettingsCommand = new RelayCommand(_ => { /* Future logic for settings */ });
+            dashboardViewModel.NavigateToSettingsCommand = new RelayCommand(async _ =>
+            {
+                await _settingsViewModel.InitializeAsync(); // Load categories
+                CurrentViewModel = _settingsViewModel;
+            });
             dashboardViewModel.AddNewProductCommand = _inventoryViewModel.AddItemCommand;
             inventoryViewModel.NavigateToDashboardCommand = new RelayCommand(_ => CurrentViewModel = dashboardViewModel);
+            settingsViewModel.NavigateToDashboardCommand = new RelayCommand(_ => CurrentViewModel = dashboardViewModel);
         }
 
         /// <summary>

@@ -157,6 +157,44 @@ namespace Inventory.Core.Application.Services
             return products.Select(MapProductToDto);
         }
 
+        public async Task AddCategoryAsync(CategoryCreateDto categoryDto)
+        {
+            var newCategory = new Category
+            {
+                Name = categoryDto.Name
+            };
+            await _unitOfWork.Categories.AddAsync(newCategory);
+            await _unitOfWork.CompleteAsync();
+        }
+
+        public async Task UpdateCategoryAsync(CategoryUpdateDto categoryDto)
+        {
+            var category = await _unitOfWork.Categories.GetByIdAsync(categoryDto.Id);
+            if (category != null)
+            {
+                category.Name = categoryDto.Name;
+                _unitOfWork.Categories.Update(category);
+                await _unitOfWork.CompleteAsync();
+            }
+        }
+
+        public async Task DeleteCategoryAsync(int categoryId)
+        {
+            // Check if any product is using this category
+            var products = await _unitOfWork.Products.GetAllAsync();
+            if (products.Any(p => p.CategoryId == categoryId))
+            {
+                throw new InvalidOperationException("This category cannot be deleted because it is currently in use by one or more products.");
+            }
+
+            var category = await _unitOfWork.Categories.GetByIdAsync(categoryId);
+            if (category != null)
+            {
+                _unitOfWork.Categories.Remove(category);
+                await _unitOfWork.CompleteAsync();
+            }
+        }
+
         private ProductDto MapProductToDto(Product product)
         {
             var variants = product.Variants.Select(v => new ProductVariantDto

@@ -10,7 +10,8 @@
         Height="700" Width="1200" MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen"
         TextElement.Foreground="{DynamicResource MaterialDesign.Brush.OnBackground}"
-        Background="{DynamicResource MaterialDesign.Brush.Background}">
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
+        Icon="/logo.ico">
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type viewModels:DashboardViewModel}">
@@ -18,6 +19,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type viewModels:InventoryViewModel}">
             <views:InventoryView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:SettingsViewModel}">
+            <views:SettingsView />
         </DataTemplate>
     </Window.Resources>
 

@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
@@ -27,33 +29,24 @@ namespace Inventory.Presentation.Wpf
                 .Build();
         }
 
-        private void ConfigureServices(IServiceCollection services)
+        private static void ConfigureServices(IServiceCollection services)
         {
-            // --- FIX 1: Change DbContext and UnitOfWork to Transient ---
-            // This ensures every operation gets a fresh context, preventing collisions.
             services.AddDbContext<InventoryDbContext>(options =>
                 options.UseNpgsql("Host=aws-1-ap-south-1.pooler.supabase.com; " +
                                    "Database=postgres; " +
                                    "Username=postgres.tksonejmooqlovsxvvda; " +
                                    "Password=SpinyardDatabase; " +
-                                   "Port=5432; " + // <-- Note the port is 5432
+                                   "Port=5432; " +
                                    "SSL Mode=Require; " +
                                    "Trust Server Certificate=true"), ServiceLifetime.Transient);
 
             services.AddTransient<IUnitOfWork, UnitOfWork>();
-
-            // This can stay scoped to the operation that uses it
             services.AddScoped<IInventoryService, InventoryService>();
-
-            // Services
             services.AddSingleton<IDialogService, Services.DialogService>();
-
-            // ViewModels - Singleton so they maintain state
             services.AddSingleton<DashboardViewModel>();
             services.AddSingleton<InventoryViewModel>();
+            services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<MainViewModel>();
-
-            // Windows/Dialogs - Transient because they are created and destroyed
             services.AddTransient<AddEditItemViewModel>();
             services.AddTransient<AddEditItemWindow>();
             services.AddTransient<MainWindow>();
@@ -65,20 +58,15 @@ namespace Inventory.Presentation.Wpf
 
             try
             {
-                using (var scope = _host.Services.CreateScope())
-                {
-                    var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
-                    // Apply any pending migrations to the database
-                    await dbContext.Database.MigrateAsync();
-                }
+                using var scope = _host.Services.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
+                await dbContext.Database.MigrateAsync();
             }
-            catch (PostgresException ex)
-            {
-                MessageBox.Show($"Database connection error: {ex.Message}\nThe application will start without database functionality.", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            // ✅ FIX: The MessageBox has been removed. The error is now silent.
             catch (Exception ex)
             {
-                MessageBox.Show($"An unexpected error occurred during database migration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Log the exception to the debug console instead of showing a popup
+                Debug.WriteLine($"Database migration failed: {ex.Message}");
             }
 
             var mainViewModel = _host.Services.GetRequiredService<MainViewModel>();
@@ -90,7 +78,5 @@ namespace Inventory.Presentation.Wpf
 
             base.OnStartup(e);
         }
-
-        // ... OnExit method ...
     }
 }

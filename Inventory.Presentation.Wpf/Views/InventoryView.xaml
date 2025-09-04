@@ -47,10 +47,86 @@
             <Setter Property="RowHeight" Value="42"/>
         </Style>
 
+        <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
+            <Border Background="Transparent" Padding="8">
+                <Path x:Name="Arrow"
+                      Data="M 0 0 L 6 6 L 12 0 Z"
+                      Width="10" Height="6"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Fill="{DynamicResource MaterialDesign.Brush.OnSurface}"/>
+            </Border>
+        </ControlTemplate>
+
+        <Style TargetType="ComboBox"
+               BasedOn="{StaticResource MaterialDesignFilledComboBox}">
+            <Setter Property="Background" Value="{DynamicResource MaterialDesign.Brush.Paper}"/>
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid SnapsToDevicePixels="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border x:Name="FieldBackground"
+                                    Margin="0"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="6"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"/>
+
+                            <ContentPresenter Name="ContentSite"
+                                              Margin="12,6,36,6"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
+
+                            <ToggleButton Grid.Column="1"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press"
+                                          Template="{StaticResource ComboBoxToggleButton}"/>
+
+                            <Popup x:Name="PART_Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="False"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Border Background="{DynamicResource MaterialDesign.Brush.Paper}"
+                                        CornerRadius="6"
+                                        BorderBrush="#E0E0E0"
+                                        BorderThickness="1"
+                                        Padding="6">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled"
+                                                  CanContentScroll="True"
+                                                  SnapsToDevicePixels="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{DynamicResource MaterialDesign.Brush.Paper}"/>
             <Setter Property="Foreground" Value="{DynamicResource MaterialDesign.Brush.OnSurface}"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="FontSize" Value="13"/>
             <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#FFF3F3F3"/>
+                </Trigger>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
                     <Setter Property="Foreground" Value="White"/>
@@ -206,9 +282,7 @@
                               SelectedItem="{Binding SelectedFilterCategory}"
                               Width="220"
                               Style="{StaticResource MaterialDesignFilledComboBox}"
-                              Margin="0,0,8,0"
-                              Background="White"
-                              Foreground="#274b14"/>
+                              Margin="0,0,8,0"/>
 
                     <Button Command="{Binding SearchCommand}"
                             Style="{StaticResource ToolIconButton}"
