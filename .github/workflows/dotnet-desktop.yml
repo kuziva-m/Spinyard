@@ -17,8 +17,6 @@ jobs:
     env:
       Solution_Name: InventoryManagementSystem.sln
       Project_Path: Inventory.Presentation.Wpf/Inventory.Presentation.Wpf.csproj
-      # Define an absolute path for the publish directory
-      PUBLISH_DIR: ${{ github.workspace }}/publish
 
     steps:
       - name: Checkout repository
@@ -33,15 +31,19 @@ jobs:
         run: dotnet restore ${{ env.Solution_Name }}
 
       - name: Build and publish the application
-        # This step now publishes to the absolute path defined above
-        run: dotnet publish ${{ env.Project_Path }} --configuration Release --runtime win-x64 --output ${{ env.PUBLISH_DIR }}
+        # Publish to a simple, predictable 'output' folder in the root
+        run: dotnet publish ${{ env.Project_Path }} --configuration Release --runtime win-x64 --output ./output
+
+      # --- DEBUGGING STEP ---
+      # This will show us all files and folders to confirm the 'output' folder exists
+      - name: Show workspace structure
+        run: dir /s
 
       - name: Setup Inno Setup
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
 
       - name: Compile the Inno Setup script
-        # This now passes the absolute path directly to Inno Setup
-        run: iscc setup.iss "/dSourcePath=${{ env.PUBLISH_DIR }}"
+        run: iscc setup.iss
 
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
