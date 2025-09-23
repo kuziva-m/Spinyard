@@ -1,5 +1,8 @@
 ﻿; Inno Setup script for Spinyard Inventory Management System
 
+; This line tells Inno Setup to use the path we provide from the workflow
+#define SourcePath "{#SourcePath}"
+
 [Setup]
 AppName=Inventory Management System
 AppVersion=1.0
@@ -18,8 +21,8 @@ UsePreviousAppDir=no
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-; The path here is now more explicit to match the build output
-Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; This now uses the absolute path variable defined above
+Source: "{#SourcePath}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Inventory Management System"; Filename: "{app}\Inventory.Presentation.Wpf.exe"
