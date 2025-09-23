@@ -30,8 +30,9 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ${{ env.Solution_Name }}
 
+      # This step now publishes to a clear 'publish' folder in the root
       - name: Build and publish the application
-        run: dotnet publish ${{ env.Project_Path }} --configuration Release --runtime win-x64 --output ./Inventory.Presentation.Wpf/build
+        run: dotnet publish ${{ env.Project_Path }} --configuration Release --runtime win-x64 --output ./publish
 
       - name: Setup Inno Setup
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2

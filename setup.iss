@@ -12,13 +12,14 @@ WizardStyle=modern
 OutputBaseFilename=SpinyardSetup
 OutputDir=.\Installer
 AppMutex=SpinyardInventoryMutex
+UsePreviousAppDir=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "Inventory.Presentation.Wpf\build\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-; This line tells Inno Setup to grab all the files from the build output folder
+; The path here is now more explicit to match the build output
+Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Inventory Management System"; Filename: "{app}\Inventory.Presentation.Wpf.exe"
