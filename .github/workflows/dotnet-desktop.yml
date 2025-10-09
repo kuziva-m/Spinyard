@@ -12,66 +12,62 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 6.0.x
 
-    # Debug step with correct PowerShell syntax
-    - name: Debug - Show Environment
-      shell: pwsh
-      run: |
-        Write-Host "Current directory:"
-        Get-Location
-        Write-Host "GitHub Workspace: ${{ github.workspace }}"
-        Write-Host "Repository: ${{ github.repository }}"
-        Write-Host "Branch: ${{ github.ref }}"
+    - name: Restore dependencies
+      run: dotnet restore
 
-    - name: Debug - List All Files
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Publish
+      run: dotnet publish Inventory.Presentation.Wpf/Inventory.Presentation.Wpf.csproj -c Release -o output
+
+    # Verify output before Inno Setup
+    - name: Verify Build Output
       shell: pwsh
       run: |
-        Write-Host "Full directory listing:"
-        Get-ChildItem -Recurse
-        Write-Host "Looking for setup.iss specifically:"
-        if (Test-Path "setup.iss") {
-            Write-Host "setup.iss found in root"
-            Get-Content setup.iss
-        } else {
-            Write-Host "setup.iss NOT found in root"
-            Write-Host "Searching for setup.iss in subdirectories:"
-            Get-ChildItem -Recurse -Filter setup.iss
+        Write-Host "Current Directory: $pwd"
+        Write-Host "Output directory contents:"
+        Get-ChildItem output -Recurse | ForEach-Object {
+            Write-Host $_.FullName
         }
+        Write-Host "Setup.iss location and content:"
+        Get-Content setup.iss
 
-    - name: Build Solution
-      run: |
-        dotnet restore
-        dotnet build --configuration Release --no-restore
-        dotnet publish -c Release -o output
-
-    - name: Debug - Check Output Directory
-      shell: pwsh
-      run: |
-        Write-Host "Checking output directory contents:"
-        Get-ChildItem output -Recurse
-
+    # Create Installer with explicit working directory
     - name: Create Installer
       uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-      with:
-        path: ${{ github.workspace }}/setup.iss
       env:
         Solution_Name: InventoryManagementSystem.sln
         Project_Path: Inventory.Presentation.Wpf/Inventory.Presentation.Wpf.csproj
         DOTNET_ROOT: C:\Program Files\dotnet
+      with:
+        path: D:\a\Spinyard\Spinyard\setup.iss
+        options: /DProjectOutput=output
 
-    - name: Debug - Check Installer Output
+    # Verify installer creation
+    - name: Verify Installer Creation
       shell: pwsh
       run: |
-        Write-Host "Checking Installer directory contents:"
+        Write-Host "Checking for installer:"
         if (Test-Path "Installer") {
-            Get-ChildItem Installer -Recurse
+            Write-Host "Installer directory found"
+            Get-ChildItem "Installer" -Recurse
         } else {
             Write-Host "Installer directory not found"
+            Write-Host "Current directory structure:"
+            Get-ChildItem -Recurse
         }
+
+    # Upload the installer as an artifact
+    - name: Upload Installer
+      uses: actions/upload-artifact@v3
+      with:
+        name: SpinyardSetup
+        path: Installer/SpinyardSetup.exe
+        if-no-files-found: error
