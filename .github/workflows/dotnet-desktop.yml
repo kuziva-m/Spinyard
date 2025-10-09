@@ -1,49 +1,69 @@
-name: .NET Core Desktop with Inno Setup Installer
+name: Build and Create Installer
 
 on:
   push:
-    branches: ["master"]
+    branches: [ main, master ]
   pull_request:
-    branches: ["master"]
+    branches: [ main, master ]
 
 jobs:
   build:
     runs-on: windows-latest
-    env:
-      Solution_Name: InventoryManagementSystem.sln
-      Project_Path: Inventory.Presentation.Wpf/Inventory.Presentation.Wpf.csproj
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # This ensures all history is fetched
 
-      - name: Install .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
 
-      - name: Restore dependencies
-        run: dotnet restore ${{ env.Solution_Name }}
+    # Debug step to check directory structure
+    - name: Debug - Show Environment
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "GitHub Workspace: ${{ github.workspace }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Branch: ${{ github.ref }}"
 
-      - name: Build and publish the application
-        # Publish to a simple, predictable 'output' folder in the root
-        run: dotnet publish ${{ env.Project_Path }} --configuration Release --runtime win-x64 --output ./output
+    - name: Debug - List All Files
+      run: |
+        echo "Full directory listing:"
+        dir /s
+        echo "Looking for setup.iss specifically:"
+        if exist setup.iss (
+          echo "setup.iss found in root"
+          type setup.iss
+        ) else (
+          echo "setup.iss NOT found in root"
+          echo "Searching for setup.iss in subdirectories:"
+          dir /s setup.iss
+        )
 
-      # --- DEBUGGING STEP ---
-      # This will show us all files and folders to confirm the 'output' folder exists
-      # - name: Show workspace structure
-      #  run: Get-ChildItem -Recurse
+    - name: Build Solution
+      run: |
+        dotnet restore
+        dotnet build --configuration Release --no-restore
+        dotnet publish -c Release -o output
 
-      - name: Setup Inno Setup
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: setup.iss
+    - name: Debug - Check Output Directory
+      run: |
+        echo "Checking output directory contents:"
+        dir output /s
 
-      - name: Compile the Inno Setup script
-        run: iscc setup.iss
+    - name: Create Installer
+      uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+      with:
+        path: ${{ github.workspace }}/setup.iss
+      env:
+        Solution_Name: InventoryManagementSystem.sln
+        Project_Path: Inventory.Presentation.Wpf/Inventory.Presentation.Wpf.csproj
+        DOTNET_ROOT: C:\Program Files\dotnet
 
-      - name: Upload Installer Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Spinyard Installer
-          path: ./Installer/SpinyardSetup.exe
+    - name: Debug - Check Installer Output
+      run: |
+        echo "Checking Installer directory contents:"
+        dir Installer /s
