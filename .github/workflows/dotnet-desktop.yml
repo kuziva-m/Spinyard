@@ -42,7 +42,7 @@ jobs:
       - name: Setup Inno Setup
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
-          scriptPath: setup.iss
+          path: setup.iss
 
       - name: Compile the Inno Setup script
         run: iscc setup.iss
