@@ -47,7 +47,7 @@ jobs:
         Project_Path: Inventory.Presentation.Wpf/Inventory.Presentation.Wpf.csproj
         DOTNET_ROOT: C:\Program Files\dotnet
       with:
-        path: D:\a\Spinyard\Spinyard\setup.iss
+        path: D:\a\Spinyard\setup.iss
         options: /DProjectOutput=output
 
     # Verify installer creation
