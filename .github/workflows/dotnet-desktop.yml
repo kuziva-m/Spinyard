@@ -1,49 +1,10 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: .NET Core Desktop with Inno Setup Installer
-
-on:
-  push:
-    branches: ["master"]
-  pull_request:
-    branches: ["master"]
-
-jobs:
-  build:
-    runs-on: windows-latest
-    env:
-      Solution_Name: InventoryManagementSystem.sln
-      Project_Path: Inventory.Presentation.Wpf/Inventory.Presentation.Wpf.csproj
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Restore dependencies
-        run: dotnet restore ${{ env.Solution_Name }}
-
-      - name: Build and publish the application
-        # Publish to a simple, predictable 'output' folder in the root
-        run: dotnet publish ${{ env.Project_Path }} --configuration Release --runtime win-x64 --output ./output
-
-      # --- DEBUGGING STEP ---
-      # This will show us all files and folders to confirm the 'output' folder exists
       - name: Show workspace structure
         run: Get-ChildItem -Recurse
 
-      - name: Setup Inno Setup
+      - name: Compile Inno Setup Script
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-
-      - name: Compile the Inno Setup script
-        run: iscc setup.iss
+        with:
+          scriptPath: setup.iss
 
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
