@@ -37,7 +37,7 @@ jobs:
       # --- DEBUGGING STEP ---
       # This will show us all files and folders to confirm the 'output' folder exists
       - name: Show workspace structure
-        run: dir /s
+        run: Get-ChildItem -Recurse
 
       - name: Setup Inno Setup
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
