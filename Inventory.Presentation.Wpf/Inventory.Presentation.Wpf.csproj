@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="logo.ico" />
+   
   </ItemGroup>
 
   <ItemGroup>
