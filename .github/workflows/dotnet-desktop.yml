@@ -38,36 +38,3 @@ jobs:
         }
         Write-Host "Setup.iss location and content:"
         Get-Content setup.iss
-
-    # Create Installer with explicit working directory
-    - name: Create Installer
-      uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-      env:
-        Solution_Name: InventoryManagementSystem.sln
-        Project_Path: Inventory.Presentation.Wpf/Inventory.Presentation.Wpf.csproj
-        DOTNET_ROOT: C:\Program Files\dotnet
-      with:
-        path: D:\a\Spinyard\setup.iss
-        options: /DProjectOutput=output
-
-    # Verify installer creation
-    - name: Verify Installer Creation
-      shell: pwsh
-      run: |
-        Write-Host "Checking for installer:"
-        if (Test-Path "Installer") {
-            Write-Host "Installer directory found"
-            Get-ChildItem "Installer" -Recurse
-        } else {
-            Write-Host "Installer directory not found"
-            Write-Host "Current directory structure:"
-            Get-ChildItem -Recurse
-        }
-
-    # Upload the installer as an artifact
-    - name: Upload Installer
-      uses: actions/upload-artifact@v4
-      with:
-        name: SpinyardSetup
-        path: Installer/SpinyardSetup.exe
-        if-no-files-found: error
